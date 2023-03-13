@@ -1,0 +1,90 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: CloudFormation template for EventBridge rule 'destinationrule'
+
+Resources:
+  MyEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      EventBusName: default
+      EventPattern:
+        detail-type:
+          - PutObject
+          - Object Created
+        source:
+          - aws.s3
+        detail:
+          bucket:
+            name:
+              - app-4917-s3-evnt-apigw-test
+      Name: myeventrule5
+      State: ENABLED
+      Targets:
+        - Id: MyLambdaFunctionId
+          Arn: !GetAtt MyLambdaFunction.Arn
+          InputTransformer:
+            InputPathsMap:
+              "bucket" : "$.detail.bucket.name"
+              "key" : "$.detail.object.key"
+            InputTemplate: |
+              {
+                  "bucket" : <bucket>,
+                  "key" : <key>
+              }
+
+  MyLambdaFunction:
+    Type: "AWS::Serverless::Function"
+    Properties: 
+      Handler: com.thehartford.payrollintake.services.EventBridgeRequestHandler::handleRequest
+      Runtime: java11
+      CodeUri: s3://app-4917-s3-evnt-apigw-test/s3-eventbridge-lambda-0.0.1-SNAPSHOT.zip
+      Architectures: 
+        - arm64
+      MemorySize: 512
+      AutoPublishAlias: live
+      Role: !GetAtt IAMAccessRole.Arn
+      Timeout: 240
+      Tracing: Active
+      
+  CloudwatchPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: AllowCloudWatchLogs
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action: 
+              - "logs:CreateLogStream"
+              - "logs:PutLogEvents"
+            Resource:
+              - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${MyLambdaFunction}" 
+              - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${MyLambdaFunction}:log-stream:*"
+      Roles:
+        - !Ref IAMAccessRole
+
+  InvokeLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref MyLambdaFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt MyEventRule.Arn
+
+  IAMAccessRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: 'lambda.amazonaws.com'
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaENIManagementAccess'
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+
+      
+          
