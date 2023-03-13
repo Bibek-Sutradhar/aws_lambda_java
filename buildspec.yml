@@ -11,7 +11,7 @@ phases:
   post_build:
     commands:
       - echo Build completed on `date`
-      - sam package --template template.yml --output-template-file packaged.yml --s3-bucket $codepipeline-ap-south-1-942679693466
+      - sam package --template template.yml --output-template-file packaged.yml --s3-bucket codepipeline-ap-south-1-942679693466
 artifacts:
   files:
     - target/s3-eventbridge-lambda-0.0.1-SNAPSHOT.jar
