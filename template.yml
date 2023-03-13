@@ -17,7 +17,7 @@ Resources:
           bucket:
             name:
               - app-4917-s3-evnt-apigw-test
-      Name: myeventrule5
+      Name: lambdaEventRuleJava
       State: ENABLED
       Targets:
         - Id: MyLambdaFunctionId
