@@ -13,6 +13,10 @@ import com.google.gson.GsonBuilder;
 public class EventBridgeRequestHandler implements RequestHandler<S3Event, String> {
 	private static final Logger logger = LoggerFactory.getLogger(EventBridgeRequestHandler.class);
     Gson gson = new GsonBuilder().setPrettyPrinting().create();
+    
+    public EventBridgeRequestHandler() {
+    	
+    }
 
 	@Override
 	public String handleRequest(S3Event input, Context context) {
